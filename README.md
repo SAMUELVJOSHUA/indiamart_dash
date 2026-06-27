@@ -1,11 +1,12 @@
 # IndiaMART B2B Scraper + EDA Dashboard
 
-3 files. No frameworks. No config layers.
+4 files. No frameworks. No config layers.
 
 ```
 indiamart_simple/
-├── scraper.py       # crawl IndiaMART (or generate mock data)
-├── dashboard.py     # Streamlit EDA dashboard
+├── scraper.py       # crawl IndiaMART or generate mock data → data/listings.csv
+├── eda.py           # all EDA logic (importable + runnable standalone)
+├── dashboard.py     # Streamlit dashboard powered by eda.py
 ├── requirements.txt
 └── data/
     └── listings.csv # created after running scraper
@@ -15,41 +16,28 @@ indiamart_simple/
 
 ## How to run
 
-### Step 1 — Install dependencies
-
 ```bash
+# 1. Install
 pip install -r requirements.txt
-```
 
-### Step 2 — Get data
+# 2. Get data
+python scraper.py --mock       # instant, no network needed
+python scraper.py              # live scrape (~2 min, falls back to mock if blocked)
 
-**Option A: Mock data (instant, no network needed)**
-```bash
-python scraper.py --mock
-```
+# 3. Optional: view EDA summary in terminal
+python eda.py
 
-**Option B: Live scrape from IndiaMART**
-```bash
-python scraper.py
-```
-> Scrapes 3 categories × 3 pages each (~90–240 listings). Takes ~2 min due to polite delays.
-> Automatically falls back to mock data if the site is unreachable.
-
-### Step 3 — Launch the dashboard
-
-```bash
+# 4. Launch dashboard
 streamlit run dashboard.py
 ```
 
-Opens at `http://localhost:8501` in your browser.
+Opens at `http://localhost:8501`
 
 ---
 
 ## What gets scraped
 
 3 categories: **Industrial Machinery**, **Electronics**, **Textiles**
-
-Fields collected per listing:
 
 | Field | Description |
 |---|---|
@@ -59,19 +47,30 @@ Fields collected per listing:
 | price_min / price_max | Parsed numeric bounds |
 | supplier | Company name |
 | location | City, State |
-| rating | Supplier rating (if shown) |
-| reviews | Review count |
+| rating | Supplier rating (0 if not available) |
+| reviews | Review count (0 if not available) |
 | url | Source listing URL |
-| scraped_at | Timestamp |
+| scraped_at | UTC timestamp |
 
 ---
 
-## Dashboard tabs
+## Dashboard
 
-| Tab | What's in it |
+**KPIs:** Total Listings · Unique Suppliers · Est. Total GMV · Avg Listing Value · Avg Rating
+
+| Tab | Contents |
 |---|---|
-| Categories | Listing count + supplier count per category |
-| Prices | Box plot (log scale) + top 10 highest-priced |
-| Regional | Top states bar chart + city treemap |
-| Ratings | Rating histogram + rating vs reviews scatter |
-| Data | Searchable table + CSV download |
+| 💰 Prices | Price band distribution, avg price by category, price summary table, top 10 highest-priced listings |
+| 🗺️ Regional | Top states bar chart, city treemap, category × state heatmap |
+| ⭐ Ratings | Rating distribution, rating vs reviews scatter, top rated suppliers |
+| 🔍 Data Quality | Null analysis with handling method, duplicate counts, anomaly detection, raw data explorer |
+
+---
+
+## Data Quality Checks
+
+| Check | Method |
+|---|---|
+| Null values | Prices filled with category median · Rating/reviews filled with 0 |
+| Duplicates | Exact, soft (title + supplier + category), and URL duplicates flagged |
+| Anomalies | Inverted price ranges, price outliers (>3σ), out-of-range ratings, title length issues |
