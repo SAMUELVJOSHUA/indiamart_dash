@@ -12,6 +12,9 @@ from eda import (
     category_by_state, rating_stats, top_rated_suppliers,
 )
 
+def centered(df):
+    return {col: st.column_config.TextColumn(col, width="medium") for col in df.columns}
+
 st.set_page_config(page_title="IndiaMART EDA", page_icon="🏭", layout="wide")
 st.title("🏭 IndiaMART B2B — EDA Dashboard")
 
@@ -88,7 +91,7 @@ with tabs[0]:
     c1, c2 = st.columns(2)
     with c1:
         st.markdown("**Price Summary by Category**")
-        st.dataframe(raw_stats, use_container_width=True, hide_index=True)
+        st.dataframe(raw_stats, use_container_width=True, hide_index=True, column_config=centered(raw_stats))
         st.caption("Typical Price = median | Price Spread = std deviation across listings")
     with c2:
         st.markdown("**Top 10 Highest-Priced Listings**")
@@ -98,7 +101,7 @@ with tabs[0]:
         top10["category"] = top10["category"].str.replace("_", " ").str.title()
         top10["supplier"] = top10["supplier"].str.title()
         top10.columns     = ["Product", "Category", "Listed Price", "Supplier"]
-        st.dataframe(top10, use_container_width=True, hide_index=True)
+        st.dataframe(top10, use_container_width=True, hide_index=True, column_config=centered(top10))
 
 with tabs[1]:
     st.subheader("Regional Patterns")
@@ -152,7 +155,8 @@ with tabs[2]:
             st.plotly_chart(fig2, use_container_width=True)
 
     st.markdown("**Top Rated Suppliers**")
-    st.dataframe(top_rated_suppliers(df), use_container_width=True, hide_index=True)
+    trs = top_rated_suppliers(df)
+    st.dataframe(trs, use_container_width=True, hide_index=True, column_config=centered(trs))
 
 with tabs[3]:
     st.subheader("Data Quality Report")
@@ -162,14 +166,18 @@ with tabs[3]:
     if na.empty:
         st.success("No nulls found.")
     else:
-        st.dataframe(na, use_container_width=True)
-
-    df_filled, log = after_null_handling(df)
-    if log:
-        cols = st.columns(len(log))
-        for i, entry in enumerate(log):
+        df_filled, log = after_null_handling(df)
+        handled = {}
+        for entry in log:
             field, rest = entry.split(":", 1)
-            cols[i].metric(field.strip(), rest.strip())
+            field = field.strip()
+            rest  = rest.strip()
+            if field in ("rating", "reviews"):
+                rest = "filled with 0 (no rating available)"
+            handled[field] = rest
+        na["Handled"] = na.index.map(lambda col: handled.get(col, "—"))
+        na["null_pct"] = na["null_pct"].apply(lambda x: f"{x}%")
+        st.dataframe(na, use_container_width=True, column_config=centered(na))
 
     st.markdown("---")
     st.markdown("#### Duplicates")
@@ -187,22 +195,15 @@ with tabs[3]:
     st.markdown("---")
     st.markdown("#### Anomalies")
     ar = anomaly_report(df)
-    c1, c2 = st.columns(2)
-    with c1:
-        st.dataframe(ar, use_container_width=True, hide_index=True)
-    with c2:
-        fig = px.bar(ar, x="count", y="anomaly_check", orientation="h",
-                     color="count", color_continuous_scale="Oranges",
-                     title="Anomaly Counts",
-                     labels={"anomaly_check": "", "count": "# Rows"})
-        fig.update_layout(yaxis={"categoryorder": "total ascending"}, coloraxis_showscale=False)
-        st.plotly_chart(fig, use_container_width=True)
+    ar["pct_of_total"] = ar["pct_of_total"].apply(lambda x: f"{x}%")
+    st.dataframe(ar, use_container_width=True, hide_index=True, column_config=centered(ar))
 
     outliers = get_price_outliers(df)
     if not outliers.empty:
         st.markdown(f"**Price outliers (>3σ) — {len(outliers)} rows:**")
         st.dataframe(outliers[["title", "category", "price", "price_mid", "supplier", "location"]],
-                     use_container_width=True, hide_index=True)
+                     use_container_width=True, hide_index=True,
+                     column_config=centered(outliers[["title", "category", "price", "price_mid", "supplier", "location"]]))
     else:
         st.success("No price outliers detected.")
 

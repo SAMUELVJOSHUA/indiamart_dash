@@ -32,10 +32,9 @@ def after_null_handling(df):
             log.append(f"{col}: filled {n} nulls with category median")
     for col in ["rating", "reviews"]:
         n = df[col].isna().sum()
-        median_val = df[col].median()
-        df[col] = df[col].fillna(median_val)
+        df[col] = df[col].fillna(0)
         if n:
-            log.append(f"{col}: filled {n} nulls with median ({median_val:.1f})")
+            log.append(f"{col}: filled {n} nulls with 0")
     for col in ["supplier", "location", "city", "state"]:
         n = df[col].isna().sum()
         df[col] = df[col].fillna("Unknown")
