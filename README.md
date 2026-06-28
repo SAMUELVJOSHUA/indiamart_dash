@@ -60,10 +60,10 @@ Opens at `http://localhost:8501`
 
 | Tab | Contents |
 |---|---|
-| 💰 Prices | Price band distribution, avg price by category, price summary table, top 10 highest-priced listings |
-| 🗺️ Regional | Top states bar chart, city treemap, category × state heatmap |
-| ⭐ Ratings | Rating distribution, rating vs reviews scatter, top rated suppliers |
-| 🔍 Data Quality | Null analysis with handling method, duplicate counts, anomaly detection, raw data explorer |
+| 💰 Prices | Price band distribution, avg price by category, price summary table, top 10 highest-priced listings, top keywords in listing titles, insights |
+| 🗺️ Regional | Top states bar chart, city treemap, category × state heatmap, listing collection trend over time, insights |
+| ⭐ Ratings | Rating distribution, rating vs reviews scatter, top rated suppliers, insights |
+| 🔍 Data Quality | Null analysis with handling method, duplicate counts, anomaly detection, raw data explorer with CSV download |
 
 ---
 
@@ -71,6 +71,30 @@ Opens at `http://localhost:8501`
 
 | Check | Method |
 |---|---|
-| Null values | Prices filled with category median · Rating/reviews filled with 0 |
+| Null values | Prices filled with category median · Rating/reviews filled with 0 (no rating available) |
 | Duplicates | Exact, soft (title + supplier + category), and URL duplicates flagged |
 | Anomalies | Inverted price ranges, price outliers (>3σ), out-of-range ratings, title length issues |
+
+---
+
+## Key Insights
+
+### 💰 Prices
+- **Industrial Machinery** shows the highest price spread, suggesting a wide range of product complexity and scale — from small components to large capital equipment
+- **Electronics** listings cluster heavily in the ₹2K–10K band, pointing to strong mid-market component demand
+- **Textiles** are concentrated at lower price points, consistent with bulk commodity pricing where volume drives value
+
+### 🗺️ Regional
+- **Gujarat and Maharashtra** consistently appear across all three categories, making them the most active B2B supplier hubs on the platform
+- **Coimbatore (Tamil Nadu)** dominates Textile listings, aligning with its established reputation as India's textile manufacturing capital
+- **Delhi and Ludhiana** show strong presence in Industrial Machinery, reflecting Punjab and NCR's manufacturing corridors
+
+### ⭐ Ratings
+- A large share of listings carry no rating, indicating that review adoption on IndiaMART is still low — a potential trust gap for buyers evaluating suppliers
+- Among rated suppliers, most cluster between **4.0–4.5**, suggesting generally positive sentiment but limited differentiation at the top end
+- No strong correlation observed between review count and rating score — high review volume does not necessarily mean higher ratings
+
+### 🔍 Data Quality
+- **Rating and review nulls** are the most common quality gap, affecting roughly 35–40% of listings — these were filled with 0 to preserve the dataset without introducing bias
+- **Soft duplicates** (same product listed by the same supplier across pages) are present, suggesting suppliers re-list products across categories for visibility
+- **Price outliers** beyond 3 standard deviations are rare but exist, likely representing custom or enterprise-grade machinery quoted on a per-unit basis
