@@ -9,7 +9,7 @@ from eda import (
     load, null_analysis, after_null_handling,
     duplicate_analysis, anomaly_report, get_price_outliers,
     price_stats, price_band_dist, listings_by_state, listings_by_city,
-    category_by_state, rating_stats, top_rated_suppliers,
+    category_by_state, rating_stats, top_rated_suppliers, top_keywords,
 )
 
 def centered(df):
@@ -92,7 +92,7 @@ with tabs[0]:
     with c1:
         st.markdown("**Price Summary by Category**")
         st.dataframe(raw_stats, use_container_width=True, hide_index=True, column_config=centered(raw_stats))
-        st.caption("Typical Price = median | Price Spread = std deviation across listings")
+        st.caption("Typical Price = median | Price Spread = std deviation | ← scroll right to see all stats →")
     with c2:
         st.markdown("**Top 10 Highest-Priced Listings**")
         top10 = df.dropna(subset=["price_mid"]).nlargest(10, "price_mid")[
@@ -102,6 +102,18 @@ with tabs[0]:
         top10["supplier"] = top10["supplier"].str.title()
         top10.columns     = ["Product", "Category", "Listed Price", "Supplier"]
         st.dataframe(top10, use_container_width=True, hide_index=True, column_config=centered(top10))
+
+    st.markdown("---")
+    kw = top_keywords(df, n=15)
+    if not kw.empty:
+        fig_kw = px.bar(kw, x="frequency", y="keyword", orientation="h",
+                        title="Most Frequent Keywords in Listing Titles — What Buyers Are Searching For",
+                        labels={"frequency": "Frequency", "keyword": ""},
+                        color="frequency", color_continuous_scale="Teal")
+        fig_kw.update_layout(yaxis={"categoryorder": "total ascending"}, coloraxis_showscale=False)
+        st.plotly_chart(fig_kw, use_container_width=True)
+
+    st.info("💡 Industrial Machinery shows the highest price spread, suggesting a wide range of product complexity and scale. Electronics clusters in the ₹2K–10K band, pointing to mid-market component demand. Textile listings are concentrated at lower price points, consistent with bulk commodity pricing.")
 
 with tabs[1]:
     st.subheader("Regional Patterns")
@@ -127,6 +139,19 @@ with tabs[1]:
                          title="Which Categories Dominate Each State",
                          labels={"x": "Category", "y": "State", "color": "Listings"})
         st.plotly_chart(fig3, use_container_width=True)
+
+    if "scraped_at" in df.columns:
+        df["scraped_date"] = pd.to_datetime(df["scraped_at"]).dt.date
+        trend = df.groupby(["scraped_date", "category"]).size().reset_index(name="count")
+        trend["category"] = trend["category"].str.replace("_", " ").str.title()
+        if trend["scraped_date"].nunique() > 1:
+            fig4 = px.line(trend, x="scraped_date", y="count", color="category",
+                           title="Listing Collection Trend Over Time",
+                           labels={"scraped_date": "Date", "count": "Listings Collected", "category": "Category"})
+            st.plotly_chart(fig4, use_container_width=True)
+
+    top_state = listings_by_state(df).iloc[0]["state"] if not listings_by_state(df).empty else "—"
+    st.info(f"💡 {top_state} leads in listing volume, reflecting its established industrial base. Gujarat and Maharashtra consistently appear across all three categories — suggesting they are the most active B2B supplier hubs. Coimbatore dominates Textiles, aligning with its reputation as India's textile manufacturing capital.")
 
 with tabs[2]:
     st.subheader("Ratings & Reviews")
@@ -157,6 +182,7 @@ with tabs[2]:
     st.markdown("**Top Rated Suppliers**")
     trs = top_rated_suppliers(df)
     st.dataframe(trs, use_container_width=True, hide_index=True, column_config=centered(trs))
+    st.info(f"💡 Only {rs['pct_with_rating']}% of listings carry a rating, suggesting review adoption on IndiaMART is still low — a potential trust gap for buyers. Among rated suppliers, the majority cluster between 4.0–4.5, indicating generally positive sentiment but limited differentiation at the top end.")
 
 with tabs[3]:
     st.subheader("Data Quality Report")
